@@ -28,8 +28,5 @@ env/
 ENV/
 
 # Project-specific
-.agents/
-checkpoints/
-.codex/
 smart_grid/server/__pycache__/
 smart_grid/__pycache__/
