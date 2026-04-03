@@ -1,0 +1,22 @@
+name: smart-grid-demand-response
+version: "1.0.0"
+description: >
+  AI agent controls demand response in a city power grid.
+  Prevents blackouts by intelligently reducing load during peak demand.
+tags: [openenv, energy, demand-response, grid, rl]
+runtime: fastapi
+app: server.app:app
+port: 7860
+tasks:
+  - name: peak_survival
+    difficulty: easy
+    description: Prevent blackout during 3-hour evening peak
+  - name: daily_balance
+    difficulty: medium
+    description: Balance grid over 24 hours minimizing discomfort
+  - name: cost_minimization_fair
+    difficulty: hard
+    description: Minimize cost over 3 days with fairness constraints
+observation_space: See Observation model in models.py
+action_space: Dict[load_id, mw_reduction]
+reward_range: [-10.0, 1.0]

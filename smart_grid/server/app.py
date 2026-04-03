@@ -28,6 +28,9 @@ Usage:
     python -m server.app
 """
 
+import os
+os.environ["ENABLE_WEB_INTERFACE"] = "true"
+
 try:
     from openenv.core.env_server.http_server import create_app
 except Exception as e:  # pragma: no cover
@@ -53,26 +56,24 @@ app = create_app(
 )
 
 
-def main(host: str = "0.0.0.0", port: int = 8000):
+def main():
     """
     Entry point for direct execution via uv run or python -m.
-
-    This function enables running the server without Docker:
-        uv run --project . server
-        uv run --project . server --port 8001
-        python -m smart_grid.server.app
-
-    Args:
-        host: Host address to bind to (default: "0.0.0.0")
-        port: Port number to listen on (default: 8000)
-
-    For production deployments, consider using uvicorn directly with
-    multiple workers:
-        uvicorn smart_grid.server.app:app --workers 4
     """
     import uvicorn
+    import sys
+    
+    # Simple argparse for port
+    port = 8000
+    if len(sys.argv) > 1 and sys.argv[1].isdigit():
+        port = int(sys.argv[1])
+    elif "--port" in sys.argv:
+        p_idx = sys.argv.index("--port")
+        if p_idx + 1 < len(sys.argv) and sys.argv[p_idx + 1].isdigit():
+            port = int(sys.argv[p_idx + 1])
 
-    uvicorn.run(app, host=host, port=port)
+    print(f"--- Starting server on PORT {port} ---")
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 
 if __name__ == "__main__":
