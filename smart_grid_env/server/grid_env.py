@@ -152,8 +152,13 @@ class SmartGridEnv(Environment):
 
         return self._make_observation(total_curtailed, step_info, reward=reward, done=self.done)
 
-    def state(self) -> dict:
-        """Return full internal environment state."""
+    @property
+    def state(self) -> State:
+        """Return the environment State object (required by OpenEnv framework)."""
+        return self._state
+
+    def state_dict(self) -> dict:
+        """Return full internal environment state as a dictionary."""
         return {
             "episode_id": self._state.episode_id,
             "step_count": self._state.step_count,

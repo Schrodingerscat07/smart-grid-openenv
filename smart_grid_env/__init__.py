@@ -1,1 +1,1 @@
-from .models import Action, Observation, StepResult
+from .models import Action, Observation
