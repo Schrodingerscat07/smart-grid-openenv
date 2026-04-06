@@ -71,6 +71,14 @@ class Observation(BaseModel):
         description="Human-readable grid status briefing for LLM reasoning"
     )
 
+    # ── RL / OpenEnv standard fields ──
+    reward: float = Field(default=0.0, description="Reward for this step (higher is better)")
+    done: bool = Field(default=False, description="Is the episode over?")
+    info: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Rich metadata for observability (frequency, cost breakdown, fairness, etc.)"
+    )
+
 
 # ---------------------------------------------------------------------------
 # Action — what the agent DOES each step
@@ -90,18 +98,4 @@ class Action(BaseModel):
             "Omit loads you don't want to curtail. "
             "Example: {'steel_plant': 20.0, 'textile_mill': 10.0}"
         )
-    )
-
-
-# ---------------------------------------------------------------------------
-# StepResult — what the environment returns after each action
-# ---------------------------------------------------------------------------
-class StepResult(BaseModel):
-    """Full response from the environment after one step."""
-    observation: Observation
-    reward: float = Field(default=0.0, description="Reward for this step (higher is better)")
-    done: bool = Field(default=False, description="Is the episode over?")
-    info: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Rich metadata for observability (frequency, cost breakdown, fairness, etc.)"
     )

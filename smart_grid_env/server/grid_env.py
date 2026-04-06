@@ -12,7 +12,7 @@ from typing import Any, Optional
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
-from models import Observation, Action, StepResult
+from models import Observation, Action
 from .simulator import GridSimulator
 from .tasks import get_task, TASK_REGISTRY
 
@@ -77,12 +77,11 @@ class SmartGridEnv(Environment):
         action: Action,
         timeout_s: Optional[float] = None,
         **kwargs: Any,
-    ) -> StepResult:
+    ) -> Observation:
         """Execute one demand response action (typically 1 hour or 15 mins)."""
         if self.done:
             # Re-return last observation if called after done
-            obs = self._make_observation(0, {})
-            return StepResult(observation=obs, reward=0.0, done=True)
+            return self._make_observation(0, {}, reward=0.0, done=True)
 
         self._state.step_count += 1
         
@@ -144,8 +143,6 @@ class SmartGridEnv(Environment):
         if self._state.step_count >= self.current_task.episode_steps:
             self.done = True
 
-        obs = self._make_observation(total_curtailed, step_info)
-        
         # 9. Simple reward fallback if step_reward isn't defined by task (grading is the primary metric)
         # We use a negative weighted sum of frequency deviation, cost, and discomfort
         freq_penalty = abs(50.0 - frequency) * 5.0
@@ -153,12 +150,7 @@ class SmartGridEnv(Environment):
         if self.blackout:
             reward -= 50.0
 
-        return StepResult(
-            observation=obs,
-            reward=reward,
-            done=self.done,
-            info=step_info
-        )
+        return self._make_observation(total_curtailed, step_info, reward=reward, done=self.done)
 
     def state(self) -> dict:
         """Return full internal environment state."""
@@ -181,7 +173,7 @@ class SmartGridEnv(Environment):
             return 0.0
         return self.current_task.grade(self.episode_history)
 
-    def _make_observation(self, curtailment_mw: float, step_info: dict) -> Observation:
+    def _make_observation(self, curtailment_mw: float, step_info: dict, reward: float = 0.0, done: bool = False) -> Observation:
         """Create a rich Observation including the situation report."""
         demand = self.simulator.get_demand(self.hour, self.day)
         solar, wind = self.simulator.get_renewable_output(self.hour, self.day)
@@ -215,7 +207,10 @@ class SmartGridEnv(Environment):
             cumulative_cost_inr=self.total_cost,
             cumulative_discomfort=self.total_discomfort,
             blackout_occurred=self.blackout,
-            situation_report=report
+            situation_report=report,
+            reward=reward,
+            done=done,
+            info=step_info
         )
 
     def _generate_situation_report(self, freq: float, alert: str, demand: float, supply: float, solar: float, wind: float) -> str:
