@@ -1,22 +1,30 @@
 name: smart-grid-demand-response
 version: "1.0.0"
 description: >
-  AI agent controls demand response in a city power grid.
-  Prevents blackouts by intelligently reducing load during peak demand.
-tags: [openenv, energy, demand-response, grid, rl]
+  The first demand response RL environment designed specifically for LLM agents.
+  Features natural-language situation reports, cascading failure mechanics, and 
+  ethical decision-making constraints in an Indian city power grid.
+tags: [openenv, energy, demand-response, grid, llm, india]
 runtime: fastapi
 app: server.app:app
 port: 7860
+
+# Define different task scenarios
 tasks:
   - name: peak_survival
     difficulty: easy
-    description: Prevent blackout during 3-hour evening peak
+    description: Survive a 3-hour evening peak (5pm–8pm) without a blackout.
   - name: daily_balance
     difficulty: medium
-    description: Balance grid over 24 hours minimizing discomfort
-  - name: cost_minimization_fair
+    description: Balance the grid over a 24-hour day while minimizing customer discomfort.
+  - name: extreme_event
     difficulty: hard
-    description: Minimize cost over 3 days with fairness constraints
-observation_space: See Observation model in models.py
-action_space: Dict[load_id, mw_reduction]
-reward_range: [-10.0, 1.0]
+    description: Handle a 48-hour heatwave crisis. Requires balancing stability, cost, and fairness.
+
+# High-level overview for the OpenEnv CLI
+observation_space: >
+  A rich JSON object containing time, weather (temp, condition), grid health (Hz, alerts), 
+  supply/demand metrics, and a 'situation_report' string for LLM reasoning.
+action_space: >
+  A JSON dictionary of {load_id: mw_to_curtail}. Example: {"steel_plant": 15.2, "office_complex": 5.0}
+reward_range: [-100.0, 10.0]

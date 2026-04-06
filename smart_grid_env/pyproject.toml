@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "smart-grid-demand-response"
 version = "1.0.0"
-description = "AI agent controls demand response in a city power grid."
+description = "A demand response environment designed specifically for LLM agents."
 requires-python = ">=3.10"
 dependencies = [
     "openenv-core[core]>=0.2.2",
@@ -14,7 +14,11 @@ dependencies = [
     "pydantic>=2.0.0",
     "openai>=1.0.0",
     "numpy>=1.24.0",
+    "pydantic-settings",
+    "httpx",
+    "websockets"
 ]
 
 [project.scripts]
 server = "server.app:main"
+env = "server.grid_env:SmartGridEnv"

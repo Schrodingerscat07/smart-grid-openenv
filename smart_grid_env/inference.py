@@ -1,65 +1,105 @@
-import os, json
+"""
+Baseline LLM Agent Inference
+==============================
+A simple baseline that uses an LLM (like GPT-3.5 or Claude) to control
+the grid. This script showcases how to use the 'situation_report' 
+from the environment for zero-shot reasoning.
+"""
+
+import os
+import json
 from openai import OpenAI
 from server.grid_env import SmartGridEnv
 from models import Action
 
+
+# Configure the client (pointing to HF Spaces or a local API if needed)
+# For the hackathon, this will run against the evaluator's selected model.
 client = OpenAI(
     base_url=os.environ.get("API_BASE_URL", "https://api.openai.com/v1"),
     api_key=os.environ.get("HF_TOKEN", "dummy_key")
 )
 MODEL = os.environ.get("MODEL_NAME", "gpt-3.5-turbo")
 
+
 def run_episode(task_name: str) -> float:
-    env = SmartGridEnv(task_name=task_name)
-    obs = env.reset()
+    """Run one full episode with the LLM agent and return the final grade."""
+    env = SmartGridEnv()
+    obs = env.reset(task_name=task_name)
     total_reward = 0
+    step_count = 0
 
-    for _ in range(12):  # 12 steps per episode
-        # Give the LLM the current observation as a prompt
+    print(f"--- Starting Episode: {task_name} ---")
+
+    while True:
+        # 1. Use the 'situation_report' as the primary prompt context
         prompt = f"""
-You are controlling a city power grid. Current state:
-- Hour: {obs.hour}:00
-- Grid frequency: {obs.grid_frequency} Hz (normal=50.0, danger<49.5)
-- Demand: {obs.total_demand_mw:.1f} MW
-- Available supply: {obs.available_supply_mw:.1f} MW
-- Solar: {obs.solar_output_mw:.1f} MW, Wind: {obs.wind_output_mw:.1f} MW
+You are an AI Smart Grid Dispatcher controlling a city power grid in India. 
+Your goal is to maintain stability (50Hz), protect critical infrastructure, and minimize costs.
 
-Available loads to curtail:
-{json.dumps(obs.loads, indent=2)}
+{obs.situation_report}
 
-Respond ONLY with a JSON object like:
-{{"curtailments": {{"load_id": mw_to_reduce, ...}}}}
-Only include loads you want to reduce. Use 0 or omit loads you don't touch.
+--- LOADS AVAILABLE TO CURTAIL ---
+{json.dumps([{"id": l["id"], "name": l["name"], "max_reducible_mw": l["reducible_mw"], "priority": l["priority"]} for l in obs.loads], indent=2)}
+
+INSTRUCTIONS:
+- Analyze the situation. Is there a supply deficit?
+- Decide which loads to curtail to bring the grid back to 50Hz.
+- Avoid curtailing 'critical' loads unless it's a total emergency.
+- Prefer 'low' priority industrial loads first.
+
+Respond ONLY with a JSON object in this format:
+{{"curtailments": {{"load_id": mw_to_reduce}}}}
+
+Example: {{"curtailments": {{"steel_plant": 15.0, "shopping_mall_1": 5.2}}}}
 """
+        # 2. Get LLM response
         response = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=300,
+            response_format={ "type": "json_object" } # Ensure JSON if model supports it
         )
 
+        # 3. Parse LLM response into an Action
         try:
             content = response.choices[0].message.content
-            # Basic cleaning if LLM adds markdown
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
-            
             action_dict = json.loads(content)
+            # Ensure it matches our Action model's expected curtailments dict
+            if "curtailments" not in action_dict:
+                action_dict = {"curtailments": action_dict}
             action = Action(**action_dict)
-        except Exception:
-            action = Action(curtailments={})  # No-op on parse failure
+        except Exception as e:
+            print(f"Error parsing LLM response: {e}. Falling back to no-op action.")
+            action = Action(curtailments={})
 
+        # 4. Step the environment
         result = env.step(action)
-        total_reward += result.reward
         obs = result.observation
+        total_reward += result.reward
+        step_count += 1
+        
+        print(f"Step {step_count} | Freq: {obs.grid_frequency_hz:.2f}Hz | Reward: {result.reward:.2f}")
 
         if result.done:
             break
 
-    return env.grade()
+    # 5. Final grading of the episode
+    final_score = env.grade()
+    print(f"--- Task {task_name} Finished | Final Grade: {final_score:.3f} ---")
+    return final_score
+
 
 if __name__ == "__main__":
-    for task in ["peak_survival", "daily_balance", "cost_minimization_fair"]:
-        score = run_episode(task)
-        print(f"Task: {task} | Score: {score:.3f}")
+    tasks = ["peak_survival", "daily_balance", "extreme_event"]
+    scores = {}
+    for task in tasks:
+        try:
+            scores[task] = run_episode(task)
+        except Exception as e:
+            print(f"Error running task {task}: {e}")
+            scores[task] = 0.0
+            
+    print("\n--- SUMMARY OF BASELINE SCORES ---")
+    for task, score in scores.items():
+        print(f"{task.upper():<20} | Score: {score:.3f}")
