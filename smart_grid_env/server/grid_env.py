@@ -244,7 +244,7 @@ class SmartGridEnv(Environment):
             lines.append(f"Surplus: {abs(deficit):.1f}MW excess. Supply ({supply:.1f}MW) covers Demand ({demand:.1f}MW).")
 
         # 3. Component Updates
-        lines.append(f"Supply Breakdown: Thermal={thermal:.1f}MW | Solar={solar:.1f}MW | Wind={wind:.1f}MW")
+        lines.append(f"Supply Breakdown: Thermal={self.simulator.THERMAL_BASE_MW:.1f}MW | Solar={solar:.1f}MW | Wind={wind:.1f}MW")
         
         if self.hour >= 17 and self.hour <= 22:
             lines.append("⚡ NOTE: Currently in evening peak demand hours. Solar declining fast.")
