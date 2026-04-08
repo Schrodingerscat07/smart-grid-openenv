@@ -22,11 +22,11 @@ def custom_gradio_ui(web_manager, action_fields, metadata, is_chat_env, title, q
     """Adds a beautiful Control Room dashboard to the web UI."""
     def strip_frontmatter(text: str) -> str:
         if not text: return ""
-        import re
-        # Find the first occurrence of --- block at the start (ignoring leading whitespace/BOM)
-        match = re.search(r'^\s*---\s*$.*?^\s*---\s*$(.*)', text, re.DOTALL | re.MULTILINE)
-        if match:
-            return match.group(1).strip()
+        # Handle cases where the file starts with metadata between '---' markers
+        parts = text.split("---")
+        if len(parts) >= 3:
+            # Join everything after the second '---' marker
+            return "---".join(parts[2:]).strip()
         return text.strip()
 
     clean_readme = strip_frontmatter(metadata.readme_content or "")
