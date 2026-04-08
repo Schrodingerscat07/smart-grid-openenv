@@ -22,16 +22,17 @@ def custom_gradio_ui(web_manager, action_fields, metadata, is_chat_env, title, q
     """Adds a beautiful Control Room dashboard to the web UI."""
     def strip_frontmatter(text: str) -> str:
         if not text: return ""
-        if text.startswith("---"):
-            parts = text.split("---", 2)
-            if len(parts) >= 3:
-                return parts[2].strip()
-        return text
+        import re
+        # Find the first occurrence of --- block at the start (ignoring leading whitespace/BOM)
+        match = re.search(r'^\s*---\s*$.*?^\s*---\s*$(.*)', text, re.DOTALL | re.MULTILINE)
+        if match:
+            return match.group(1).strip()
+        return text.strip()
 
     clean_readme = strip_frontmatter(metadata.readme_content or "")
     
     with gr.Blocks() as custom:
-        gr.Markdown(f"# ⚡ {title}\n\n{clean_readme}")
+        gr.Markdown(clean_readme)
         gr.Markdown("---")
         gr.Markdown("## 🎮 Smart Grid Control Room\nThis is your main dashboard. The situation report below updates dynamically after every action.")
         
