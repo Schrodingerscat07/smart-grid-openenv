@@ -217,7 +217,7 @@ class SmartGridEnv(Environment):
         """
         # 1. Frequency component (0–1): penalises deviation from 50Hz
         freq_dev = abs(50.0 - frequency)
-        freq_score = max(0.0, 1.0 - freq_dev / 1.5)  # 0 at ±1.5Hz, 1 at nominal
+        freq_score = max(0.0, 1.0 - freq_dev / 2.5)  # 0 at ±2.5Hz, 1 at nominal
 
         # 2. Cost component: normalised against a ~reasonable per-step cost
         step_cost = curtail_results["total_cost_inr"]
@@ -395,9 +395,16 @@ class SmartGridEnv(Environment):
         # 4. Battery status
         hours_left = battery.hours_of_discharge_remaining()
         lines.append("")
+        
+        bat_warn = ""
+        if battery.soc_pct >= 90.0:
+            bat_warn = " ⚡ (Nearly full — consider discharging)"
+        elif battery.soc_pct <= 15.0:
+            bat_warn = " ⚠️ (Critically low — conserve or charge)"
+            
         lines.append(
             f"🔋 BATTERY: {battery.stored_mwh:.1f}/{battery.CAPACITY_MWH:.0f} MWh "
-            f"({battery.soc_pct:.0f}% charged) | "
+            f"({battery.soc_pct:.0f}% charged){bat_warn} | "
             f"Can discharge up to {battery.MAX_RATE_MW:.0f}MW for {hours_left:.1f}h"
         )
 
@@ -429,7 +436,7 @@ class SmartGridEnv(Environment):
         else:
             lines.append(f"⚡ CASCADING RISK: 0 loads tripped. Auto-disconnect triggers at <49.2Hz for {self.simulator.CRITICAL_GRACE_STEPS} steps.")
         if low_steps > 0 and freq < self.simulator.FREQ_CRITICAL:
-            lines.append(f"   ⚠️ Already {low_steps} consecutive step(s) below 49.2Hz. {grace_left} step(s) until cascade!")
+            lines.append(f"   ⚠️ ⏱️ CASCADE COUNTDOWN: Already {low_steps} consecutive step(s) below 49.2Hz. {grace_left} step(s) until cascade!")
 
         # 7. Load status (sorted by curtailment priority)
         lines.append("")

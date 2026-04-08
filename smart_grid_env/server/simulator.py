@@ -395,16 +395,19 @@ class GridSimulator:
 
     # ── Frequency & Cascading Failures ──────────────────────────────────────
 
+    # How much frequency deviates per 100MW of imbalance
+    FREQ_SENSITIVITY: float = 0.40
+
     def get_grid_frequency(self, demand: float, effective_supply: float) -> float:
         """
         Grid frequency based on supply-demand imbalance.
-        Each 100MW imbalance ≈ 0.25Hz deviation from nominal 50.0Hz.
+        Each 100MW imbalance ≈ 0.40Hz deviation from nominal 50.0Hz.
         """
         imbalance = effective_supply - demand
-        freq_shift = (imbalance / 100.0) * 0.25
+        freq_shift = (imbalance / 100.0) * self.FREQ_SENSITIVITY
         frequency = self.NOMINAL_FREQUENCY + freq_shift
         frequency += self.rng.gauss(0, 0.02)
-        return round(max(47.0, min(52.0, frequency)), 3)
+        return round(max(45.0, min(52.0, frequency)), 3)
 
     def get_alert_level(self, frequency: float) -> str:
         """Map frequency to alert level string."""
