@@ -145,7 +145,7 @@ class GridSimulator:
     - India time-of-use pricing
     """
 
-    THERMAL_BASE_MW: float = 150.0
+    THERMAL_BASE_MW: float = 80.0
     SOLAR_PEAK_MW: float = 60.0
     WIND_PEAK_MW: float = 40.0
     NOMINAL_FREQUENCY: float = 50.0
@@ -395,8 +395,8 @@ class GridSimulator:
 
     # ── Frequency & Cascading Failures ──────────────────────────────────────
 
-    # How much frequency deviates per 100MW of imbalance
-    FREQ_SENSITIVITY: float = 0.40
+    # How much frequency deviates per 100MW of imbalance (0.65 ensures doing nothing causes blackout)
+    FREQ_SENSITIVITY: float = 0.65
 
     def get_grid_frequency(self, demand: float, effective_supply: float) -> float:
         """

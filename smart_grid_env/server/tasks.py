@@ -86,6 +86,11 @@ def _no_cascade_score(history: List[Dict]) -> float:
     total_trips = sum(len(s.get("newly_tripped_loads", [])) for s in history)
     return max(0.0, 1.0 - total_trips * 0.10)
 
+def _cascade_penalty(base_score: float, history: List[Dict]) -> float:
+    """Brutal penalty: Halves the score for EVERY load that auto-disconnects."""
+    total_trips = sum(len(s.get("newly_tripped_loads", [])) for s in history)
+    return base_score * (0.5 ** total_trips)
+
 def _battery_utilization_score(history: List[Dict]) -> float:
     """Score for wise battery use: rewards both charging and discharging."""
     charge_steps = sum(
@@ -126,7 +131,8 @@ class PeakSurvivalTask(Task):
             return 0.0
         stability = _stability_score(episode_history)
         blackout = 1.0 if _blackout_free(episode_history) else 0.0
-        return round(0.60 * stability + 0.40 * blackout, 4)
+        base_score = round(0.60 * stability + 0.40 * blackout, 4)
+        return _cascade_penalty(base_score, episode_history)
 
 
 # ── Medium: Daily Balance ───────────────────────────────────────────────────
@@ -150,7 +156,8 @@ class DailyBalanceTask(Task):
         discomfort = _discomfort_score(episode_history)
         cost = _cost_score(episode_history, cap_inr=500_000)
         renewable = _renewable_utilization_score(episode_history, target_pct=30.0)
-        return round(0.40 * stability + 0.30 * discomfort + 0.20 * cost + 0.10 * renewable, 4)
+        base_score = round(0.40 * stability + 0.30 * discomfort + 0.20 * cost + 0.10 * renewable, 4)
+        return _cascade_penalty(base_score, episode_history)
 
 
 # ── Hard: Extreme Weather Event ─────────────────────────────────────────────
@@ -177,10 +184,11 @@ class ExtremeWeatherTask(Task):
         critical = _critical_protection_score(episode_history)
         cost = _cost_score(episode_history, cap_inr=2_000_000)
         discomfort = _discomfort_score(episode_history)
-        return round(
+        base_score = round(
             0.30 * stability + 0.25 * fairness + 0.20 * critical +
             0.15 * cost + 0.10 * discomfort, 4
         )
+        return _cascade_penalty(base_score, episode_history)
 
 
 # ── Medium-Hard: Monsoon Crisis ─────────────────────────────────────────────
@@ -216,9 +224,10 @@ class MonsoonCrisisTask(Task):
         battery_util = _battery_utilization_score(episode_history)
         cost = _cost_score(episode_history, cap_inr=600_000)
         blackout = 1.0 if _blackout_free(episode_history) else 0.0
-        return round(
+        base_score = round(
             0.35 * stability + 0.25 * battery_util + 0.20 * cost + 0.20 * blackout, 4
         )
+        return _cascade_penalty(base_score, episode_history)
 
 
 # ── Expert: Renewable Transition ─────────────────────────────────────────────
@@ -262,10 +271,11 @@ class RenewableTransitionTask(Task):
         fairness = _fairness_score(episode_history, n)
         cost = _cost_score(episode_history, cap_inr=5_000_000)
         no_cascade = _no_cascade_score(episode_history)
-        return round(
+        base_score = round(
             0.25 * stability + 0.25 * renewable + 0.20 * fairness +
             0.15 * cost + 0.15 * no_cascade, 4
         )
+        return _cascade_penalty(base_score, episode_history)
 
 
 # ── Task registry ────────────────────────────────────────────────────────────
