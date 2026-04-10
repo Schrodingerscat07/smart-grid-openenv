@@ -34,6 +34,10 @@ class Task:
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+def _clamp(score: float) -> float:
+    """Clamp score to strict open interval (0, 1) — never exactly 0.0 or 1.0."""
+    return max(0.001, min(0.999, score))
+
 def _freq_score(freq: float) -> float:
     """Map frequency to [0,1] score."""
     if freq >= 49.8:
@@ -128,11 +132,11 @@ class PeakSurvivalTask(Task):
 
     def grade(self, episode_history: List[Dict[str, Any]]) -> float:
         if not episode_history:
-            return 0.0
+            return 0.001
         stability = _stability_score(episode_history)
         blackout = 1.0 if _blackout_free(episode_history) else 0.0
         base_score = round(0.60 * stability + 0.40 * blackout, 4)
-        return _cascade_penalty(base_score, episode_history)
+        return _clamp(_cascade_penalty(base_score, episode_history))
 
 
 # ── Medium: Daily Balance ───────────────────────────────────────────────────
@@ -151,13 +155,13 @@ class DailyBalanceTask(Task):
 
     def grade(self, episode_history: List[Dict[str, Any]]) -> float:
         if not episode_history:
-            return 0.0
+            return 0.001
         stability = _stability_score(episode_history)
         discomfort = _discomfort_score(episode_history)
         cost = _cost_score(episode_history, cap_inr=500_000)
         renewable = _renewable_utilization_score(episode_history, target_pct=30.0)
         base_score = round(0.40 * stability + 0.30 * discomfort + 0.20 * cost + 0.10 * renewable, 4)
-        return _cascade_penalty(base_score, episode_history)
+        return _clamp(_cascade_penalty(base_score, episode_history))
 
 
 # ── Hard: Extreme Weather Event ─────────────────────────────────────────────
@@ -177,7 +181,7 @@ class ExtremeWeatherTask(Task):
 
     def grade(self, episode_history: List[Dict[str, Any]]) -> float:
         if not episode_history:
-            return 0.0
+            return 0.001
         n = len(episode_history)
         stability = _stability_score(episode_history)
         fairness = _fairness_score(episode_history, n)
@@ -188,7 +192,7 @@ class ExtremeWeatherTask(Task):
             0.30 * stability + 0.25 * fairness + 0.20 * critical +
             0.15 * cost + 0.10 * discomfort, 4
         )
-        return _cascade_penalty(base_score, episode_history)
+        return _clamp(_cascade_penalty(base_score, episode_history))
 
 
 # ── Medium-Hard: Monsoon Crisis ─────────────────────────────────────────────
@@ -219,7 +223,7 @@ class MonsoonCrisisTask(Task):
 
     def grade(self, episode_history: List[Dict[str, Any]]) -> float:
         if not episode_history:
-            return 0.0
+            return 0.001
         stability = _stability_score(episode_history)
         battery_util = _battery_utilization_score(episode_history)
         cost = _cost_score(episode_history, cap_inr=600_000)
@@ -227,7 +231,7 @@ class MonsoonCrisisTask(Task):
         base_score = round(
             0.35 * stability + 0.25 * battery_util + 0.20 * cost + 0.20 * blackout, 4
         )
-        return _cascade_penalty(base_score, episode_history)
+        return _clamp(_cascade_penalty(base_score, episode_history))
 
 
 # ── Expert: Renewable Transition ─────────────────────────────────────────────
@@ -264,7 +268,7 @@ class RenewableTransitionTask(Task):
 
     def grade(self, episode_history: List[Dict[str, Any]]) -> float:
         if not episode_history:
-            return 0.0
+            return 0.001
         n = len(episode_history)
         stability = _stability_score(episode_history)
         renewable = _renewable_utilization_score(episode_history, target_pct=50.0)
@@ -275,7 +279,7 @@ class RenewableTransitionTask(Task):
             0.25 * stability + 0.25 * renewable + 0.20 * fairness +
             0.15 * cost + 0.15 * no_cascade, 4
         )
-        return _cascade_penalty(base_score, episode_history)
+        return _clamp(_cascade_penalty(base_score, episode_history))
 
 
 # ── Task registry ────────────────────────────────────────────────────────────
