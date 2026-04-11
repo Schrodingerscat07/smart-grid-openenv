@@ -120,7 +120,7 @@ LOADS: {loads_summary}"""
     rewards_str = ",".join([f"{r:.2f}" for r in rewards])
     
     # [END] mandatory stdout
-    print(f"[END] success={success_str} steps={step_count} score={final_score:.2f} rewards={rewards_str}", flush=True)
+    print(f"[END] success={success_str} steps={step_count} score={final_score:.4f} rewards={rewards_str}", flush=True)
     
     return final_score
 
@@ -138,4 +138,4 @@ if __name__ == "__main__":
             run_episode(task)
         except Exception as e:
             # If a massive exception happens, log standard end to prevent crawler crash
-            print(f"[END] success=false steps=0 score=0.00 rewards=0.00", flush=True)
+            print(f"[END] success=false steps=0 score=0.001 rewards=0.00", flush=True)
