@@ -4,8 +4,26 @@ sdk: docker
 base_path: /web
 ---
 
-> **The first demand response RL environment natively designed for LLM Agents.**  
-> Click the **Custom** tab above to open the interactive Control Room.
+> [!TIP]
+> **Judge's Quick Guide**
+> 1. Click the **Custom** tab above to open the professional Control Room UI.
+> 2. View the **Situation Report** — our core innovation that enables LLMs to reason about grid physics using natural language.
+> 3. Try the **"Break the Grid"** challenge in the README below to see cascading failure mechanics in action.
+
+---
+
+## 🎯 The Innovation: LLM-Native Situation Reports
+
+Most RL environments for energy (CityLearn, Grid2Op) provide observations as flat numeric vectors (e.g., `[50.2, 0.45, 120.5]`). This restricts their use to narrow deep-learning models like PPO or SAC.
+
+**Smart Grid Demand Response** introduces the **Situation Report (SitRep)**. This is a template-driven, natural-language briefing generated in real-time by the environment. It maps complex physics (frequency drift, cascading trip risk, generation forecasts) into a format that allows frontier LLMs to apply **zero-shot strategic reasoning**.
+
+| Feature | Numeric Vector Agent | Smart Grid LLM Agent |
+| :--- | :--- | :--- |
+| **Observation** | `[49.6, 0.45, 12, 0]` | "⚠️ WARNING: Freq at 49.6Hz. evening peak in 2h..." |
+| **Context** | None (must be learned) | Understands "Hospital" priority vs "Steel Plant" |
+| **Strategy** | Hardcoded/Learned | Flexible, zero-shot ethical trade-offs |
+| **Fail-safe** | Numeric thresholds | Qualitative reasoning about cascading risk |
 
 ---
 
